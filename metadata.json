@@ -1,0 +1,6 @@
+{
+  "name": "Vedika LearnHub",
+  "description": "Production-grade LMS & EdTech Student Mobile Application for Vedika LearnHub.",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
