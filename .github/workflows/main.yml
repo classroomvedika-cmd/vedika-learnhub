@@ -1,4 +1,4 @@
-name: ZIP to APK Convert with Icon
+name: ZIP to APK Safe Convert
 on:
   push:
     branches:
@@ -15,6 +15,10 @@ jobs:
         run: |
           mkdir ./web_files
           unzip -o *.zip -d ./web_files
+          # If files are nested inside a subfolder, move them to root
+          if [ $(ls -1 ./web_files | wc -l) -eq 1 ] && [ -d ./web_files/* ]; then
+            mv ./web_files/*/* ./web_files/ || true
+          fi
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -24,22 +28,9 @@ jobs:
       - name: Initialize Capacitor App
         run: |
           npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/assets
-          # Change "My E-Learning" to your real app name below
-          # Change "com.yourname.edu" to your custom package ID below
-          npx cap init "My E-Learning" "com.yourname.edu" --web-dir=./web_files
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npx cap init "My App" "com.my-learning-platform.app" --web-dir=./web_files --confirm
           npx cap add android
-
-      - name: Generate App Icons
-        run: |
-          if [ -f "./web_files/icon.png" ]; then
-            cp ./web_files/icon.png ./icon.png
-            npx capacitor-assets generate --android
-          elif [ -f "./icon.png" ]; then
-            npx capacitor-assets generate --android
-          else
-            echo "No custom icon found, using default android icon."
-          fi
 
       - name: Setup Java JDK
         uses: actions/setup-java@v4
