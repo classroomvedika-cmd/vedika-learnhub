@@ -84,9 +84,9 @@ const MainAppLayout: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#1E1B31] text-[#172033] flex justify-center">
+    <div className="h-screen h-[100dvh] bg-[#1E1B31] text-[#172033] flex justify-center overflow-hidden">
       {/* Mobile-first responsive wrapper */}
-      <div className="w-full max-w-lg min-h-screen bg-[#F5F3F9] border-x border-[#EAE6F4] shadow-2xl flex flex-col relative overflow-hidden">
+      <div className="w-full max-w-lg h-full bg-[#F5F3F9] border-x border-[#EAE6F4] shadow-2xl flex flex-col relative overflow-hidden">
         {/* Top Header */}
         {activeTab !== 'community' && (
           <TopHeader
@@ -101,8 +101,8 @@ const MainAppLayout: React.FC = () => {
           ref={mainContentRef}
           className={
             activeTab === 'community'
-              ? 'flex-1 overflow-hidden h-screen flex flex-col relative'
-              : 'flex-1 p-4 overflow-y-auto custom-scrollbar min-h-[calc(100vh-130px)]'
+              ? 'flex-1 overflow-hidden flex flex-col relative min-h-0'
+              : 'flex-1 p-4 overflow-y-auto custom-scrollbar min-h-0'
           }
         >
           <ErrorBoundary fallbackTitle="Error loading this tab">

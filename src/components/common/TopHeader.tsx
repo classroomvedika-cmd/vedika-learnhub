@@ -18,7 +18,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   const resolvedStudentId = profile?.id ? resolvePersistentStudentId(profile.id, profile.student_id) : (profile?.student_id || 'Student Hub');
 
   return (
-    <header className="sticky top-0 z-30 w-full bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-4 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
+    <header className="relative shrink-0 z-30 w-full bg-white/90 backdrop-blur-md border-b border-[#EAE6F4] px-4 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
       <div className="max-w-lg mx-auto flex items-center justify-between gap-3">
         {/* Brand & Student Snapshot */}
         <button

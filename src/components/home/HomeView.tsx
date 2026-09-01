@@ -14,6 +14,15 @@ interface HomeViewProps {
   onOpenPlans: () => void;
 }
 
+// Module-level cache to prevent flickering and redundant Supabase requests on tab switching
+let cachedHomeData: {
+  featuredContent: ContentItem[];
+  upcomingExams: Exam[];
+  todayRoutine: RoutineItem[];
+  announcements: Announcement[];
+  timestamp: number;
+} | null = null;
+
 export const HomeView: React.FC<HomeViewProps> = ({
   onNavigateTab,
   onOpenPlans,
@@ -23,7 +32,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const [upcomingExams, setUpcomingExams] = useState<Exam[]>([]);
   const [todayRoutine, setTodayRoutine] = useState<RoutineItem[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(!cachedHomeData);
   const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null);
 
   useEffect(() => {
@@ -31,7 +40,25 @@ export const HomeView: React.FC<HomeViewProps> = ({
   }, []);
 
   const loadHomeData = async () => {
-    setIsLoading(true);
+    const now = Date.now();
+    const cacheDuration = 30000; // 30 seconds cache to ensure freshness while avoiding rapid re-fetches
+
+    if (cachedHomeData) {
+      // Instantly load cached data to prevent skeleton layout shifts
+      setFeaturedContent(cachedHomeData.featuredContent);
+      setUpcomingExams(cachedHomeData.upcomingExams);
+      setTodayRoutine(cachedHomeData.todayRoutine);
+      setAnnouncements(cachedHomeData.announcements);
+      
+      // If the cache is still fresh, do not fetch again
+      if (now - cachedHomeData.timestamp < cacheDuration) {
+        setIsLoading(false);
+        return;
+      }
+    } else {
+      setIsLoading(true);
+    }
+
     try {
       const currentJsDay = new Date().getDay();
       const todayDayNum = currentJsDay === 0 ? 7 : currentJsDay;
@@ -43,10 +70,23 @@ export const HomeView: React.FC<HomeViewProps> = ({
         dataService.getAnnouncements(),
       ]);
 
-      setFeaturedContent((contents || []).slice(0, 4));
-      setUpcomingExams((exams || []).slice(0, 2));
-      setTodayRoutine((routine || []).filter((r) => Number(r.day_of_week) === todayDayNum).slice(0, 3));
-      setAnnouncements((anns || []).slice(0, 2));
+      const feat = (contents || []).slice(0, 4);
+      const upExams = (exams || []).slice(0, 2);
+      const todRoutine = (routine || []).filter((r) => Number(r.day_of_week) === todayDayNum).slice(0, 3);
+      const annList = (anns || []).slice(0, 2);
+
+      setFeaturedContent(feat);
+      setUpcomingExams(upExams);
+      setTodayRoutine(todRoutine);
+      setAnnouncements(annList);
+
+      cachedHomeData = {
+        featuredContent: feat,
+        upcomingExams: upExams,
+        todayRoutine: todRoutine,
+        announcements: annList,
+        timestamp: Date.now(),
+      };
     } catch (e) {
       console.error('Home data load error:', e);
     } finally {
