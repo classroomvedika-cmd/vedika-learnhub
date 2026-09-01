@@ -1,0 +1,59 @@
+name: ZIP to APK Convert with Icon
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  convert_to_apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Automatically Find and Unzip
+        run: |
+          mkdir ./web_files
+          unzip -o *.zip -d ./web_files
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Initialize Capacitor App
+        run: |
+          npm init -y
+          npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/assets
+          # Change "My E-Learning" to your real app name below
+          # Change "com.yourname.edu" to your custom package ID below
+          npx cap init "My E-Learning" "com.yourname.edu" --web-dir=./web_files
+          npx cap add android
+
+      - name: Generate App Icons
+        run: |
+          if [ -f "./web_files/icon.png" ]; then
+            cp ./web_files/icon.png ./icon.png
+            npx capacitor-assets generate --android
+          elif [ -f "./icon.png" ]; then
+            npx capacitor-assets generate --android
+          else
+            echo "No custom icon found, using default android icon."
+          fi
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'zulu'
+
+      - name: Build Final APK
+        run: |
+          cd android
+          ./gradlew assembleDebug
+
+      - name: Upload APK File
+        uses: actions/upload-artifact@v4
+        with:
+          name: finished-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
