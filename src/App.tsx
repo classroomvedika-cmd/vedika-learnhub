@@ -27,6 +27,12 @@ const MainAppLayout: React.FC = () => {
   const [isNotifModalOpen, setIsNotifModalOpen] = useState<boolean>(false);
   const mainContentRef = useRef<HTMLElement>(null);
 
+  React.useEffect(() => {
+    const handleOpenPlans = () => setIsPlansModalOpen(true);
+    window.addEventListener('open-plans-modal', handleOpenPlans);
+    return () => window.removeEventListener('open-plans-modal', handleOpenPlans);
+  }, []);
+
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     if (mainContentRef.current) {

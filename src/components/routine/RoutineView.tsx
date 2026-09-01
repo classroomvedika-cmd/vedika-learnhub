@@ -1,12 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Calendar, Clock, User, Video, ExternalLink, Sparkles } from 'lucide-react';
+import { Calendar, Clock, User, Video, ExternalLink, Sparkles, Lock } from 'lucide-react';
 import { dataService } from '../../services/dataService';
 import { RoutineItem } from '../../types';
 import { LoadingSkeleton } from '../common/LoadingSkeleton';
 import { EmptyState } from '../common/EmptyState';
+import { useAuth } from '../../context/AuthContext';
+import { SubscriptionModal } from '../common/SubscriptionModal';
 
 export const RoutineView: React.FC = () => {
+  const { hasActiveSubscription } = useAuth();
+  const [showSubModal, setShowSubModal] = useState<boolean>(false);
+  const [subModalTitle, setSubModalTitle] = useState<string>("Unlock this Routine");
+  const [subModalDesc, setSubModalDesc] = useState<string>("Subscribe to Vedika LearnHub to access this premium lecture and lecture schedules.");
+
   const days = [
     { num: 1, name: 'Mon', full: 'Monday' },
     { num: 2, name: 'Tue', full: 'Tuesday' },
@@ -28,7 +35,7 @@ export const RoutineView: React.FC = () => {
   useEffect(() => {
     setIsLoading(true);
     dataService.getRoutine().then((data) => {
-      setRoutineItems(data);
+      setRoutineItems(data || []);
       setIsLoading(false);
     });
   }, []);
@@ -89,57 +96,92 @@ export const RoutineView: React.FC = () => {
             description="Use this time for revision, reviewing formula banks, or taking mock test series."
           />
         ) : (
-          filteredItems.map((item, idx) => (
-            <motion.div
-              key={item.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.05 }}
-              className="bg-white border border-slate-200/80 rounded-3xl p-4 shadow-xs space-y-3"
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#3157D5] bg-blue-50 px-2 py-0.5 rounded border border-blue-200/60">
-                    {item.subject}
-                  </span>
-                  <h4 className="text-sm font-bold text-slate-900 mt-1.5">
-                    {item.topic || `${item.subject} Regular Lecture`}
-                  </h4>
+          filteredItems.map((item, idx) => {
+            const isItemLocked = !hasActiveSubscription && item.access_type === 'subscriber';
+
+            return (
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.05 }}
+                onClick={() => {
+                  if (isItemLocked) {
+                    setSubModalTitle(`Unlock ${item.subject} Lecture`);
+                    setSubModalDesc(`Subscribe to Vedika LearnHub to unlock the ${item.topic || 'lecture'} schedule and attend this live class.`);
+                    setShowSubModal(true);
+                  }
+                }}
+                className={`bg-white border rounded-3xl p-4 shadow-xs space-y-3 transition-colors ${
+                  isItemLocked ? 'border-amber-200 hover:bg-amber-50/20 cursor-pointer' : 'border-slate-200/80'
+                }`}
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#3157D5] bg-blue-50 px-2 py-0.5 rounded border border-blue-200/60 flex items-center gap-1 inline-flex">
+                      {item.subject}
+                      {isItemLocked && <Lock className="w-2.5 h-2.5 text-amber-600 inline" />}
+                    </span>
+                    <h4 className="text-sm font-bold text-slate-900 mt-1.5 flex items-center gap-1">
+                      {item.topic || `${item.subject} Regular Lecture`}
+                      {isItemLocked && <span className="text-[11px] text-amber-600 font-bold">(Premium 🔒)</span>}
+                    </h4>
+                  </div>
+
+                  <div className="flex items-center gap-1 text-xs font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200">
+                    <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>
+                      {item.start_time} - {item.end_time}
+                    </span>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-1 text-xs font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200">
-                  <Clock className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>
-                    {item.start_time} - {item.end_time}
-                  </span>
-                </div>
-              </div>
+                {item.teacher_name && (
+                  <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                    <User className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Educator: <span className="font-semibold text-slate-900">{item.teacher_name}</span></span>
+                  </div>
+                )}
 
-              {item.teacher_name && (
-                <div className="flex items-center gap-1.5 text-xs text-slate-600">
-                  <User className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Educator: <span className="font-semibold text-slate-900">{item.teacher_name}</span></span>
-                </div>
-              )}
+                {item.description && (
+                  <p className="text-xs text-slate-500 leading-relaxed">{item.description}</p>
+                )}
 
-              {item.description && (
-                <p className="text-xs text-slate-500 leading-relaxed">{item.description}</p>
-              )}
-
-              {item.room_link && (
-                <button
-                  onClick={() => window.open(item.room_link, '_blank', 'noopener,noreferrer')}
-                  className="w-full py-2.5 px-3 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 text-slate-800 hover:text-[#3157D5] text-xs font-semibold rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-xs"
-                >
-                  <Video className="w-3.5 h-3.5 text-[#3157D5]" />
-                  <span>Join Live Lecture Room</span>
-                  <ExternalLink className="w-3 h-3 text-slate-400" />
-                </button>
-              )}
-            </motion.div>
-          ))
+                {item.room_link && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (isItemLocked) {
+                        setSubModalTitle(`Unlock ${item.subject} Lecture`);
+                        setSubModalDesc(`Subscribe to Vedika LearnHub to unlock the ${item.topic || 'lecture'} schedule and attend this live class.`);
+                        setShowSubModal(true);
+                      } else {
+                        window.open(item.room_link, '_blank', 'noopener,noreferrer');
+                      }
+                    }}
+                    className={`w-full py-2.5 px-3 border text-xs font-semibold rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-xs ${
+                      isItemLocked
+                        ? 'bg-amber-50 hover:bg-amber-100/50 border-amber-200 text-amber-800'
+                        : 'bg-slate-50 hover:bg-blue-50 border-slate-200 hover:border-blue-300 text-slate-800 hover:text-[#3157D5]'
+                    }`}
+                  >
+                    <Video className="w-3.5 h-3.5" />
+                    <span>{isItemLocked ? 'Unlock Live Lecture' : 'Join Live Lecture Room'}</span>
+                    <ExternalLink className="w-3 h-3 text-slate-400" />
+                  </button>
+                )}
+              </motion.div>
+            );
+          })
         )}
       </div>
+
+      <SubscriptionModal
+        isOpen={showSubModal}
+        onClose={() => setShowSubModal(false)}
+        title={subModalTitle}
+        description={subModalDesc}
+      />
     </div>
   );
 };

@@ -67,6 +67,7 @@ export interface ContentCategory {
   sort_order?: number;
   created_at?: string;
   content_count?: number;
+  access_type?: 'free' | 'subscriber';
 }
 
 export interface ContentButton {
@@ -94,6 +95,7 @@ export interface ContentItem {
   created_at?: string;
   buttons?: ContentButton[];
   category?: ContentCategory;
+  access_type?: 'free' | 'subscriber';
 }
 
 export interface PostButton {
@@ -115,6 +117,7 @@ export interface Post {
   created_at: string;
   updated_at?: string;
   buttons?: PostButton[];
+  access_type?: 'free' | 'subscriber';
 }
 
 export interface AppNotification {
@@ -142,6 +145,7 @@ export interface RoutineItem {
   description?: string;
   is_active: boolean;
   created_at?: string;
+  access_type?: 'free' | 'subscriber';
 }
 
 export interface Exam {
@@ -160,6 +164,7 @@ export interface Exam {
   created_at?: string;
   questions_count?: number;
   user_result?: ExamResult | null;
+  access_type?: 'free' | 'subscriber';
 }
 
 export interface ExamQuestion {

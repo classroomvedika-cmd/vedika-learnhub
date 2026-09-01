@@ -233,7 +233,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const hasActiveSubscription = Boolean(
     subscription &&
     subscription.status === 'active' &&
-    new Date(subscription.expiry_date).getTime() > Date.now()
+    new Date((subscription as any).expie_date || subscription.expiry_date).getTime() > Date.now()
   );
 
   return (

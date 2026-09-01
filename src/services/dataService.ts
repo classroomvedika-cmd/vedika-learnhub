@@ -126,13 +126,21 @@ export const dataService = {
         return null;
       }
 
-      if (data && data.plan) {
-        const p = data.plan as any;
-        data.plan = {
-          ...p,
-          price: Number(p.amount ?? p.price ?? 0),
-          amount: Number(p.amount ?? p.price ?? 0),
-        };
+      if (data) {
+        const expDate = (data as any).expie_date || (data as any).expiry_date;
+        if (expDate) {
+          (data as any).expiry_date = expDate;
+          (data as any).expie_date = expDate;
+        }
+
+        if (data.plan) {
+          const p = data.plan as any;
+          data.plan = {
+            ...p,
+            price: Number(p.amount ?? p.price ?? 0),
+            amount: Number(p.amount ?? p.price ?? 0),
+          };
+        }
       }
       return data as Subscription;
     } catch (e) {

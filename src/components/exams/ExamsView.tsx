@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { FileCheck, Trophy, Clock, ArrowRight, CheckCircle2, History, AlertCircle, Sparkles } from 'lucide-react';
+import { FileCheck, Trophy, Clock, ArrowRight, CheckCircle2, History, AlertCircle, Sparkles, Lock } from 'lucide-react';
 import { dataService } from '../../services/dataService';
 import { Exam, ExamResult, ExamQuestion } from '../../types';
 import { useAuth } from '../../context/AuthContext';
@@ -9,17 +9,22 @@ import { EmptyState } from '../common/EmptyState';
 import { LiveExamModal } from './LiveExamModal';
 import { ExamResultModal } from './ExamResultModal';
 import { supabase } from '../../lib/supabase';
+import { SubscriptionModal } from '../common/SubscriptionModal';
 
 interface ExamsViewProps {
   onOpenPlans: () => void;
 }
 
 export const ExamsView: React.FC<ExamsViewProps> = ({ onOpenPlans }) => {
-  const { user } = useAuth();
+  const { user, hasActiveSubscription } = useAuth();
   const [activeTab, setActiveTab] = useState<'available' | 'history'>('available');
   const [exams, setExams] = useState<Exam[]>([]);
   const [examResults, setExamResults] = useState<ExamResult[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  const [showSubModal, setShowSubModal] = useState<boolean>(false);
+  const [subModalTitle, setSubModalTitle] = useState<string>("Unlock Mock Test");
+  const [subModalDesc, setSubModalDesc] = useState<string>("Subscribe to Vedika LearnHub to access this premium exam series.");
 
   // Live Exam State
   const [activeExam, setActiveExam] = useState<Exam | null>(null);
@@ -131,6 +136,7 @@ export const ExamsView: React.FC<ExamsViewProps> = ({ onOpenPlans }) => {
           <div className="space-y-3">
             {exams.map((exam, idx) => {
               const previousAttempt = examResults.find((r) => r.exam_id === exam.id);
+              const isExamLocked = !hasActiveSubscription && exam.access_type === 'subscriber';
 
               return (
                 <motion.div
@@ -138,14 +144,29 @@ export const ExamsView: React.FC<ExamsViewProps> = ({ onOpenPlans }) => {
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.06 }}
-                  className="bg-white border border-slate-200/80 hover:border-blue-300 rounded-3xl p-5 shadow-xs space-y-4"
+                  onClick={() => {
+                    if (isExamLocked) {
+                      setSubModalTitle(`Unlock Mock Test`);
+                      setSubModalDesc(`Subscribe to Vedika LearnHub to unlock the "${exam.title}" mock test and access premium exam series.`);
+                      setShowSubModal(true);
+                    }
+                  }}
+                  className={`bg-white border rounded-3xl p-5 shadow-xs space-y-4 transition-all ${
+                    isExamLocked
+                      ? 'border-amber-200 hover:bg-amber-50/10 cursor-pointer'
+                      : 'border-slate-200/80 hover:border-blue-300'
+                  }`}
                 >
                   <div className="flex justify-between items-start">
                     <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#3157D5] bg-blue-50 px-2 py-0.5 rounded border border-blue-200/60">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#3157D5] bg-blue-50 px-2 py-0.5 rounded border border-blue-200/60 flex items-center gap-1 inline-flex">
                         {exam.subject || 'Live Mock'}
+                        {isExamLocked && <Lock className="w-2.5 h-2.5 text-amber-600 inline" />}
                       </span>
-                      <h3 className="text-sm font-bold text-slate-900 mt-1.5">{exam.title}</h3>
+                      <h3 className="text-sm font-bold text-slate-900 mt-1.5 flex items-center gap-1">
+                        {exam.title}
+                        {isExamLocked && <span className="text-[11px] text-amber-600 font-bold">(Premium 🔒)</span>}
+                      </h3>
                     </div>
                     {previousAttempt ? (
                       <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 flex items-center gap-1">
@@ -153,7 +174,7 @@ export const ExamsView: React.FC<ExamsViewProps> = ({ onOpenPlans }) => {
                       </span>
                     ) : (
                       <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                        Available
+                        {isExamLocked ? 'Premium 🔒' : 'Available'}
                       </span>
                     )}
                   </div>
@@ -182,11 +203,24 @@ export const ExamsView: React.FC<ExamsViewProps> = ({ onOpenPlans }) => {
 
                   {/* Button */}
                   <button
-                    onClick={() => setActiveExam(exam)}
-                    className="w-full py-2.5 px-4 bg-gradient-to-r from-[#3157D5] to-[#6C63D9] hover:from-blue-600 hover:to-indigo-600 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (isExamLocked) {
+                        setSubModalTitle(`Unlock Mock Test`);
+                        setSubModalDesc(`Subscribe to Vedika LearnHub to unlock the "${exam.title}" mock test and access premium exam series.`);
+                        setShowSubModal(true);
+                      } else {
+                        setActiveExam(exam);
+                      }
+                    }}
+                    className={`w-full py-2.5 px-4 text-white text-xs font-bold rounded-xl shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${
+                      isExamLocked
+                        ? 'bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 shadow-amber-500/5'
+                        : 'bg-gradient-to-r from-[#3157D5] to-[#6C63D9] hover:from-blue-600 hover:to-indigo-600 shadow-blue-500/20'
+                    }`}
                   >
-                    <span>{previousAttempt ? 'Retake Examination' : 'Start Exam Now'}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <span>{isExamLocked ? 'Unlock Premium Mock Test' : (previousAttempt ? 'Retake Examination' : 'Start Exam Now')}</span>
+                    {isExamLocked ? <Lock className="w-3.5 h-3.5 text-amber-700" /> : <ArrowRight className="w-3.5 h-3.5" />}
                   </button>
                 </motion.div>
               );
@@ -261,6 +295,13 @@ export const ExamsView: React.FC<ExamsViewProps> = ({ onOpenPlans }) => {
         questions={reviewQuestions}
         userAnswers={reviewAnswers}
         onClose={() => setLatestResult(null)}
+      />
+
+      <SubscriptionModal
+        isOpen={showSubModal}
+        onClose={() => setShowSubModal(false)}
+        title={subModalTitle}
+        description={subModalDesc}
       />
     </div>
   );

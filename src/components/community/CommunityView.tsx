@@ -28,12 +28,19 @@ import { GroupMessage, PrivateMessage, Doubt, DoubtReply } from '../../types';
 import { LoadingSkeleton } from '../common/LoadingSkeleton';
 import { EmptyState } from '../common/EmptyState';
 import { supabase } from '../../lib/supabase';
+import { SubscriptionModal } from '../common/SubscriptionModal';
+import { Lock } from 'lucide-react';
 
 type CommunityScreen = 'landing' | 'community-chat' | 'help-desk' | 'doubts';
 
 export const CommunityView: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
-  const { user, profile } = useAuth();
+  const { user, profile, hasActiveSubscription } = useAuth();
   const [currentScreen, setCurrentScreen] = useState<CommunityScreen>('landing');
+
+  // Subscription modal states
+  const [showSubModal, setShowSubModal] = useState<boolean>(false);
+  const [subModalTitle, setSubModalTitle] = useState<string>("Unlock Community Hub");
+  const [subModalDesc, setSubModalDesc] = useState<string>("Subscribe to Vedika LearnHub to access active student chats and doubts solving.");
 
   // Group Messages State
   const [groupMessages, setGroupMessages] = useState<GroupMessage[]>([]);
@@ -356,16 +363,32 @@ export const CommunityView: React.FC<{ onBack?: () => void }> = ({ onBack }) => 
           <motion.div
             whileHover={{ scale: 1.015 }}
             whileTap={{ scale: 0.985 }}
-            onClick={() => setCurrentScreen('community-chat')}
-            className="bg-white border-2 border-slate-200/80 hover:border-[#312C51] rounded-3xl p-5 shadow-xs cursor-pointer transition-all flex items-center justify-between group"
+            onClick={() => {
+              if (!hasActiveSubscription) {
+                setSubModalTitle("Unlock Community Chat");
+                setSubModalDesc("Join the group discussion with thousands of top students. Available for active subscribers only.");
+                setShowSubModal(true);
+              } else {
+                setCurrentScreen('community-chat');
+              }
+            }}
+            className={`bg-white border-2 rounded-3xl p-5 shadow-xs cursor-pointer transition-all flex items-center justify-between group ${
+              !hasActiveSubscription ? 'border-amber-100 hover:border-amber-300' : 'border-slate-200/80 hover:border-[#312C51]'
+            }`}
           >
             <div className="flex items-center gap-4">
-              <div className="w-13 h-13 rounded-2xl bg-[#312C51] text-[#F0C38E] flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 transition-transform">
+              <div className="w-13 h-13 rounded-2xl bg-[#312C51] text-[#F0C38E] flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 transition-transform relative">
                 <Users className="w-6 h-6" />
+                {!hasActiveSubscription && (
+                  <div className="absolute -top-1 -right-1 bg-amber-500 text-white rounded-full p-1 border border-white shadow-xs">
+                    <Lock className="w-3 h-3" />
+                  </div>
+                )}
               </div>
               <div>
-                <h3 className="text-base font-black text-slate-900 font-['Outfit'] group-hover:text-[#312C51] transition-colors">
+                <h3 className="text-base font-black text-slate-900 font-['Outfit'] group-hover:text-[#312C51] transition-colors flex items-center gap-1.5">
                   Community Chat
+                  {!hasActiveSubscription && <span className="text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200 font-bold flex items-center gap-0.5"><Lock className="w-2.5 h-2.5" /> VIP</span>}
                 </h3>
                 <p className="text-xs text-slate-500 font-medium mt-0.5">
                   Talk with other Vedika students.
@@ -373,7 +396,7 @@ export const CommunityView: React.FC<{ onBack?: () => void }> = ({ onBack }) => 
               </div>
             </div>
             <div className="w-9 h-9 rounded-full bg-slate-100 group-hover:bg-[#312C51] group-hover:text-white text-slate-400 flex items-center justify-center transition-all shrink-0">
-              <ChevronRight className="w-5 h-5" />
+              {!hasActiveSubscription ? <Lock className="w-4 h-4 text-amber-600" /> : <ChevronRight className="w-5 h-5" />}
             </div>
           </motion.div>
 
@@ -406,16 +429,32 @@ export const CommunityView: React.FC<{ onBack?: () => void }> = ({ onBack }) => 
           <motion.div
             whileHover={{ scale: 1.015 }}
             whileTap={{ scale: 0.985 }}
-            onClick={() => setCurrentScreen('doubts')}
-            className="bg-white border-2 border-slate-200/80 hover:border-[#F0C38E] rounded-3xl p-5 shadow-xs cursor-pointer transition-all flex items-center justify-between group"
+            onClick={() => {
+              if (!hasActiveSubscription) {
+                setSubModalTitle("Unlock Doubts Solving");
+                setSubModalDesc("Post your doubts, upload images, and get step-by-step solutions from expert mentors. Available for active subscribers only.");
+                setShowSubModal(true);
+              } else {
+                setCurrentScreen('doubts');
+              }
+            }}
+            className={`bg-white border-2 rounded-3xl p-5 shadow-xs cursor-pointer transition-all flex items-center justify-between group ${
+              !hasActiveSubscription ? 'border-amber-100 hover:border-amber-300' : 'border-slate-200/80 hover:border-[#F0C38E]'
+            }`}
           >
             <div className="flex items-center gap-4">
-              <div className="w-13 h-13 rounded-2xl bg-[#312C51] text-[#F0C38E] flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 transition-transform">
+              <div className="w-13 h-13 rounded-2xl bg-[#312C51] text-[#F0C38E] flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 transition-transform relative">
                 <HelpCircle className="w-6 h-6" />
+                {!hasActiveSubscription && (
+                  <div className="absolute -top-1 -right-1 bg-amber-500 text-white rounded-full p-1 border border-white shadow-xs">
+                    <Lock className="w-3 h-3" />
+                  </div>
+                )}
               </div>
               <div>
-                <h3 className="text-base font-black text-slate-900 font-['Outfit'] group-hover:text-[#312C51] transition-colors">
+                <h3 className="text-base font-black text-slate-900 font-['Outfit'] group-hover:text-[#312C51] transition-colors flex items-center gap-1.5">
                   My Doubts
+                  {!hasActiveSubscription && <span className="text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200 font-bold flex items-center gap-0.5"><Lock className="w-2.5 h-2.5" /> VIP</span>}
                 </h3>
                 <p className="text-xs text-slate-500 font-medium mt-0.5">
                   Ask questions and view replies.
@@ -423,11 +462,18 @@ export const CommunityView: React.FC<{ onBack?: () => void }> = ({ onBack }) => 
               </div>
             </div>
             <div className="w-9 h-9 rounded-full bg-slate-100 group-hover:bg-[#F0C38E] group-hover:text-[#312C51] text-slate-400 flex items-center justify-center transition-all shrink-0">
-              <ChevronRight className="w-5 h-5" />
+              {!hasActiveSubscription ? <Lock className="w-4 h-4 text-amber-600" /> : <ChevronRight className="w-5 h-5" />}
             </div>
           </motion.div>
         </div>
       </div>
+
+      <SubscriptionModal
+        isOpen={showSubModal}
+        onClose={() => setShowSubModal(false)}
+        title={subModalTitle}
+        description={subModalDesc}
+      />
     </div>
     );
   }

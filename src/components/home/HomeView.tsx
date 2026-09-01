@@ -8,6 +8,7 @@ import { dataService } from '../../services/dataService';
 import { ContentItem, Exam, RoutineItem, Announcement } from '../../types';
 import { LoadingSkeleton } from '../common/LoadingSkeleton';
 import { ContentDetailModal } from '../learning/ContentDetailModal';
+import { SubscriptionModal } from '../common/SubscriptionModal';
 
 interface HomeViewProps {
   onNavigateTab: (tab: string) => void;
@@ -34,6 +35,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(!cachedHomeData);
   const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null);
+
+  const [showSubModal, setShowSubModal] = useState<boolean>(false);
+  const [subModalTitle, setSubModalTitle] = useState<string>("Unlock Premium Content");
+  const [subModalDesc, setSubModalDesc] = useState<string>("Subscribe to Vedika LearnHub to access this premium content and unlock your full learning potential.");
 
   useEffect(() => {
     loadHomeData();
@@ -261,37 +266,65 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </div>
 
           <div className="space-y-1.5">
-            {todayRoutine.map((item) => (
-              <div
-                key={item.id}
-                className="bg-white border border-slate-200/80 rounded-2xl p-3 flex items-center justify-between gap-3 shadow-xs"
-              >
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] font-bold text-[#3157D5] bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200/60">
-                      {item.subject}
-                    </span>
-                    <span className="text-xs font-semibold text-slate-900 truncate">
-                      {item.topic || `${item.subject} Class`}
-                    </span>
-                  </div>
-                  <div className="text-[10px] text-slate-500 mt-1">
-                    {item.start_time} - {item.end_time} {item.teacher_name ? `• ${item.teacher_name}` : ''}
-                  </div>
-                </div>
+            {todayRoutine.map((item) => {
+              const isItemLocked = !hasActiveSubscription && item.access_type === 'subscriber';
 
-                {item.room_link && (
-                  <button
-                    type="button"
-                    onClick={() => window.open(item.room_link, '_blank', 'noopener,noreferrer')}
-                    className="p-2 bg-[#3157D5] hover:bg-blue-700 text-white rounded-xl text-xs font-medium shrink-0 transition-colors active:scale-95 shadow-xs"
-                    title="Join class"
-                  >
-                    <Video className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-            ))}
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => {
+                    if (isItemLocked) {
+                      setSubModalTitle(`Unlock ${item.subject} Class`);
+                      setSubModalDesc("Subscribe to Vedika LearnHub to join this live lecture class schedule.");
+                      setShowSubModal(true);
+                    }
+                  }}
+                  className={`bg-white border rounded-2xl p-3 flex items-center justify-between gap-3 shadow-xs ${
+                    isItemLocked ? 'border-amber-200 hover:bg-amber-50/20 cursor-pointer' : 'border-slate-200/80'
+                  }`}
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-bold text-[#3157D5] bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200/60 flex items-center gap-1">
+                        {item.subject}
+                        {isItemLocked && <Lock className="w-2.5 h-2.5 text-amber-600 inline" />}
+                      </span>
+                      <span className="text-xs font-semibold text-slate-900 truncate">
+                        {item.topic || `${item.subject} Class`}
+                        {isItemLocked && <span className="text-[10px] text-amber-600 font-bold ml-1">(Premium)</span>}
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-slate-500 mt-1">
+                      {item.start_time} - {item.end_time} {item.teacher_name ? `• ${item.teacher_name}` : ''}
+                    </div>
+                  </div>
+
+                  {item.room_link && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (isItemLocked) {
+                          setSubModalTitle(`Unlock ${item.subject} Class`);
+                          setSubModalDesc("Subscribe to Vedika LearnHub to join this live lecture class schedule.");
+                          setShowSubModal(true);
+                        } else {
+                          window.open(item.room_link, '_blank', 'noopener,noreferrer');
+                        }
+                      }}
+                      className={`p-2 rounded-xl text-xs font-medium shrink-0 transition-colors active:scale-95 shadow-xs ${
+                        isItemLocked
+                          ? 'bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200'
+                          : 'bg-[#3157D5] hover:bg-blue-700 text-white'
+                      }`}
+                      title={isItemLocked ? "Unlock class" : "Join class"}
+                    >
+                      {isItemLocked ? <Lock className="w-3.5 h-3.5" /> : <Video className="w-3.5 h-3.5" />}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -321,13 +354,21 @@ export const HomeView: React.FC<HomeViewProps> = ({
         ) : (
           <div className="space-y-1.5">
             {featuredContent.map((item) => {
-              const isLocked = item.is_premium && !hasActiveSubscription;
+              const isLocked = !hasActiveSubscription && (item.is_premium || item.access_type === 'subscriber');
 
               return (
                 <div
                   key={item.id}
                   id={`home-content-item-${item.id}`}
-                  onClick={() => setSelectedContent(item)}
+                  onClick={() => {
+                    if (isLocked) {
+                      setSubModalTitle(`Unlock Study Material`);
+                      setSubModalDesc(`Subscribe to Vedika LearnHub to access "${item.title}" and open all premium study materials.`);
+                      setShowSubModal(true);
+                    } else {
+                      setSelectedContent(item);
+                    }
+                  }}
                   className="bg-white hover:bg-slate-50/80 border border-slate-200/80 rounded-2xl p-3 flex items-center justify-between cursor-pointer transition-colors active:scale-[0.99] gap-3 shadow-xs"
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -390,31 +431,53 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </div>
 
           <div className="space-y-1.5">
-            {upcomingExams.map((exam) => (
-              <div
-                key={exam.id}
-                id={`home-exam-${exam.id}`}
-                onClick={() => onNavigateTab('exams')}
-                className="bg-white hover:bg-slate-50/80 border border-slate-200/80 rounded-2xl p-3 flex items-center justify-between cursor-pointer transition-colors shadow-xs"
-              >
-                <div>
-                  <span className="text-[9px] font-bold text-[#3157D5] bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200/60">
-                    {exam.subject}
-                  </span>
-                  <h4 className="text-xs font-semibold text-slate-900 mt-0.5">{exam.title}</h4>
-                  <div className="text-[10px] text-slate-500 mt-0.5">
-                    {exam.duration_minutes} Mins • {exam.total_marks} Marks
-                  </div>
-                </div>
+            {upcomingExams.map((exam) => {
+              const isExamLocked = !hasActiveSubscription && exam.access_type === 'subscriber';
 
-                <button
-                  type="button"
-                  className="px-2.5 py-1.5 bg-[#3157D5] hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors"
+              return (
+                <div
+                  key={exam.id}
+                  id={`home-exam-${exam.id}`}
+                  onClick={() => {
+                    if (isExamLocked) {
+                      setSubModalTitle(`Unlock Mock Test`);
+                      setSubModalDesc(`Subscribe to Vedika LearnHub to take the ${exam.title} mock test and unlock all premium exams.`);
+                      setShowSubModal(true);
+                    } else {
+                      onNavigateTab('exams');
+                    }
+                  }}
+                  className={`bg-white border rounded-2xl p-3 flex items-center justify-between cursor-pointer transition-colors shadow-xs ${
+                    isExamLocked ? 'border-amber-200 hover:bg-amber-50/20' : 'border-slate-200/80 hover:bg-slate-50/80'
+                  }`}
                 >
-                  Start
-                </button>
-              </div>
-            ))}
+                  <div>
+                    <span className="text-[9px] font-bold text-[#3157D5] bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200/60 flex items-center gap-1 inline-flex">
+                      {exam.subject}
+                      {isExamLocked && <Lock className="w-2.5 h-2.5 text-amber-600 inline" />}
+                    </span>
+                    <h4 className="text-xs font-semibold text-slate-900 mt-0.5 flex items-center gap-1">
+                      {exam.title}
+                      {isExamLocked && <span className="text-[10px] text-amber-600 font-bold">(Premium)</span>}
+                    </h4>
+                    <div className="text-[10px] text-slate-500 mt-0.5">
+                      {exam.duration_minutes} Mins • {exam.total_marks} Marks
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    className={`px-2.5 py-1.5 text-xs font-semibold rounded-xl shadow-xs transition-colors ${
+                      isExamLocked
+                        ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                        : 'bg-[#3157D5] hover:bg-blue-700 text-white'
+                    }`}
+                  >
+                    {isExamLocked ? <Lock className="w-3.5 h-3.5" /> : 'Start'}
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -425,6 +488,13 @@ export const HomeView: React.FC<HomeViewProps> = ({
         isOpen={Boolean(selectedContent)}
         onClose={() => setSelectedContent(null)}
         onOpenPlans={onOpenPlans}
+      />
+
+      <SubscriptionModal
+        isOpen={showSubModal}
+        onClose={() => setShowSubModal(false)}
+        title={subModalTitle}
+        description={subModalDesc}
       />
     </div>
   );

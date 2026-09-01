@@ -182,7 +182,11 @@ export const authService = {
       safeUpdates.phone = updates.phone.trim();
     }
     if (updates.photo_url !== undefined || updates.image_url !== undefined || updates.avatar_url !== undefined) {
-      safeUpdates.photo_url = updates.photo_url || updates.image_url || updates.avatar_url;
+      if (updates.photo_url === null || updates.image_url === null || updates.avatar_url === null) {
+        safeUpdates.photo_url = null;
+      } else {
+        safeUpdates.photo_url = updates.photo_url || updates.image_url || updates.avatar_url;
+      }
     }
 
     const { data, error } = await supabase

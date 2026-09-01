@@ -8,6 +8,7 @@ import { EmptyState } from '../common/EmptyState';
 import { ContentDetailModal } from './ContentDetailModal';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { SubscriptionModal } from '../common/SubscriptionModal';
 
 interface LearnViewProps {
   onOpenPlans: () => void;
@@ -21,6 +22,10 @@ export const LearnView: React.FC<LearnViewProps> = ({ onOpenPlans }) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null);
+
+  const [showSubModal, setShowSubModal] = useState<boolean>(false);
+  const [subModalTitle, setSubModalTitle] = useState<string>("Unlock Study Material");
+  const [subModalDesc, setSubModalDesc] = useState<string>("Subscribe to Vedika LearnHub to access this premium study material.");
 
   useEffect(() => {
     loadCategories();
@@ -134,7 +139,7 @@ export const LearnView: React.FC<LearnViewProps> = ({ onOpenPlans }) => {
       ) : (
         <div className="space-y-3">
           {contents.map((item, idx) => {
-            const isLocked = item.is_premium && !hasActiveSubscription;
+            const isLocked = !hasActiveSubscription && (item.is_premium || item.access_type === 'subscriber');
 
             return (
               <motion.div
@@ -142,7 +147,15 @@ export const LearnView: React.FC<LearnViewProps> = ({ onOpenPlans }) => {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.05 }}
-                onClick={() => setSelectedContent(item)}
+                onClick={() => {
+                  if (isLocked) {
+                    setSubModalTitle(`Unlock Study Material`);
+                    setSubModalDesc(`Subscribe to Vedika LearnHub to access "${item.title}" and open all premium notes, formula banks, and videos.`);
+                    setShowSubModal(true);
+                  } else {
+                    setSelectedContent(item);
+                  }
+                }}
                 className="bg-white hover:bg-slate-50/80 border border-slate-200/80 hover:border-blue-300 rounded-2xl p-3.5 flex items-center justify-between gap-3 cursor-pointer transition-all active:scale-[0.99] shadow-xs group"
               >
                 <div className="flex items-center gap-3 min-w-0">
@@ -206,6 +219,13 @@ export const LearnView: React.FC<LearnViewProps> = ({ onOpenPlans }) => {
         isOpen={Boolean(selectedContent)}
         onClose={() => setSelectedContent(null)}
         onOpenPlans={onOpenPlans}
+      />
+
+      <SubscriptionModal
+        isOpen={showSubModal}
+        onClose={() => setShowSubModal(false)}
+        title={subModalTitle}
+        description={subModalDesc}
       />
     </div>
   );

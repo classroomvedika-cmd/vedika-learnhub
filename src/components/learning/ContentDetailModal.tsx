@@ -21,7 +21,7 @@ export const ContentDetailModal: React.FC<ContentDetailModalProps> = ({
 
   if (!isOpen || !content) return null;
 
-  const isLocked = content.is_premium && !hasActiveSubscription;
+  const isLocked = !hasActiveSubscription && (content.is_premium || content.access_type === 'subscriber');
 
   // Convert YouTube URLs to embed format
   const getYouTubeEmbedUrl = (url?: string) => {
