@@ -45,13 +45,21 @@ export const LiveExamModal: React.FC<LiveExamModalProps> = ({
       questions.forEach((q) => {
         const selected = userAnswers[q.id];
         if (selected !== undefined) {
-          const isCorrect = q.correct_option !== undefined ? selected === q.correct_option : true;
+          const qMarks = q.marks !== undefined && q.marks !== null ? Number(q.marks) : 1;
+          const qNeg = q.negative_marks !== undefined && q.negative_marks !== null
+            ? Number(q.negative_marks)
+            : Number(exam.negative_marks || 0);
+
+          const isCorrect = q.correct_option !== undefined && q.correct_option !== null
+            ? selected === q.correct_option
+            : false;
+
           if (isCorrect) {
             correctCount++;
-            score += Number(q.marks || 1);
+            score += qMarks;
           } else {
             incorrectCount++;
-            score -= Number(q.negative_marks || 0);
+            score -= Math.abs(qNeg);
           }
           answersArray.push({
             question_id: q.id,
@@ -63,10 +71,11 @@ export const LiveExamModal: React.FC<LiveExamModalProps> = ({
 
       // Keep score non-negative
       score = Math.max(0, score);
-      const totalMarks = exam.total_marks || (questions.length * 1);
+      const totalMarks = questions.reduce((sum, item) => sum + (item.marks !== undefined && item.marks !== null ? Number(item.marks) : 1), 0);
       const unattemptedCount = Math.max(0, questions.length - (correctCount + incorrectCount));
       const percentage = totalMarks > 0 ? (score / totalMarks) * 100 : 0;
-      const passed = score >= (exam.passing_marks || (totalMarks * 0.4));
+      const passingMarks = exam.passing_marks !== undefined && exam.passing_marks !== null ? Number(exam.passing_marks) : Math.ceil(totalMarks * 0.4);
+      const passed = score >= passingMarks;
 
       const resultPayload: Partial<ExamResult> = {
         exam_id: exam.id,
@@ -240,7 +249,7 @@ export const LiveExamModal: React.FC<LiveExamModalProps> = ({
             <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs space-y-2">
               <div className="flex justify-between text-[11px] text-slate-500 font-semibold">
                 <span>Question {currentIndex + 1}</span>
-                <span className="text-[#3157D5]">+{currentQ.marks || 1} / -{currentQ.negative_marks || 0} marks</span>
+                <span className="text-[#3157D5]">+{currentQ.marks ?? 1} / -{currentQ.negative_marks ?? 0} marks</span>
               </div>
               <p className="text-sm font-bold text-slate-900 leading-relaxed whitespace-pre-line">
                 {currentQ.question_text}

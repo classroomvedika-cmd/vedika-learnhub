@@ -71,7 +71,7 @@ export const ExamsView: React.FC<ExamsViewProps> = ({ onOpenPlans }) => {
     }
   };
 
-  const handleFinishExam = (
+  const handleFinishExam = async (
     result: ExamResult,
     questions: ExamQuestion[],
     answers: Record<string, number>
@@ -80,7 +80,7 @@ export const ExamsView: React.FC<ExamsViewProps> = ({ onOpenPlans }) => {
     setLatestResult(result);
     setReviewQuestions(questions);
     setReviewAnswers(answers);
-    loadData();
+    await loadData();
   };
 
   return (
@@ -186,18 +186,24 @@ export const ExamsView: React.FC<ExamsViewProps> = ({ onOpenPlans }) => {
                   )}
 
                   {/* Details strip */}
-                  <div className="grid grid-cols-3 gap-2 py-2.5 px-3 bg-slate-50 border border-slate-200/80 rounded-2xl text-center text-xs">
+                  <div className="grid grid-cols-4 gap-1 py-2.5 px-2 bg-slate-50 border border-slate-200/80 rounded-2xl text-center text-[11px]">
                     <div>
-                      <div className="text-[10px] text-slate-500 font-medium">Duration</div>
+                      <div className="text-[9px] text-slate-500 font-medium">Name</div>
+                      <div className="font-bold text-slate-900 mt-0.5 truncate max-w-full" title={exam.subject || 'Live Mock'}>
+                        {exam.subject || 'Live Mock'}
+                      </div>
+                    </div>
+                    <div className="border-l border-slate-200">
+                      <div className="text-[9px] text-slate-500 font-medium">Duration</div>
                       <div className="font-bold text-slate-900 mt-0.5">{exam.duration_minutes} Mins</div>
                     </div>
-                    <div className="border-x border-slate-200">
-                      <div className="text-[10px] text-slate-500 font-medium">Total Marks</div>
+                    <div className="border-l border-slate-200">
+                      <div className="text-[9px] text-slate-500 font-medium">Total Marks</div>
                       <div className="font-bold text-slate-900 mt-0.5">{exam.total_marks}</div>
                     </div>
-                    <div>
-                      <div className="text-[10px] text-slate-500 font-medium">Passing</div>
-                      <div className="font-bold text-emerald-700 mt-0.5">{exam.passing_marks}</div>
+                    <div className="border-l border-slate-200">
+                      <div className="text-[9px] text-slate-500 font-medium">Questions</div>
+                      <div className="font-bold text-slate-900 mt-0.5">{exam.questions_count ?? 0}</div>
                     </div>
                   </div>
 

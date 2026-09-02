@@ -312,6 +312,45 @@ export const dataService = {
       return [];
     }
 
+    // Determine if the current student is an active subscriber
+    let hasActiveSubscription = false;
+    if (userId) {
+      try {
+        const { data: sub } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('student_uid', userId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (sub) {
+          const expDate = (sub as any).expie_date || (sub as any).expiry_date;
+          hasActiveSubscription = Boolean(
+            sub.status === 'active' &&
+            new Date(expDate).getTime() > Date.now()
+          );
+        }
+      } catch (subErr) {
+        console.warn('Error checking subscription in getNotifications:', subErr);
+      }
+    }
+
+    // Filter notifications by target audience
+    const filteredRaw = (data || []).filter((n: any) => {
+      const audience = n.audience ? String(n.audience).trim().toLowerCase() : 'everyone';
+      if (audience === 'everyone') {
+        return true;
+      }
+      if (audience === 'free') {
+        return !hasActiveSubscription;
+      }
+      if (audience === 'subscriber') {
+        return hasActiveSubscription;
+      }
+      return true;
+    });
+
     // Read stored read-notification IDs from localStorage for this student
     const readKey = userId ? `vedika_read_notifs_${userId}` : 'vedika_read_notifs_guest';
     let readIds: string[] = [];
@@ -322,7 +361,7 @@ export const dataService = {
       readIds = [];
     }
 
-    return (data || []).map((n: any) => ({
+    return filteredRaw.map((n: any) => ({
       id: String(n.id),
       title: n.title || 'Vedika Announcement',
       message: n.message || n.body || n.content || '',
@@ -424,7 +463,35 @@ export const dataService = {
       console.warn('Exams fetch error:', error);
       return [];
     }
-    return (data || []) as Exam[];
+
+    // Dynamic calculation of questions count, total marks, and passing marks
+    const { data: qData, error: qError } = await supabase
+      .from('exam_questions')
+      .select('exam_id, marks');
+
+    const statsMap: Record<string, { count: number; totalMarks: number }> = {};
+    if (!qError && qData) {
+      qData.forEach((q: any) => {
+        const eid = String(q.exam_id);
+        if (!statsMap[eid]) {
+          statsMap[eid] = { count: 0, totalMarks: 0 };
+        }
+        statsMap[eid].count += 1;
+        statsMap[eid].totalMarks += Number(q.marks || 1);
+      });
+    }
+
+    return (data || []).map((exam: any) => {
+      const stats = statsMap[String(exam.id)] || { count: 0, totalMarks: 0 };
+      const total_marks = stats.totalMarks;
+      const passing_marks = exam.passing_marks ?? Math.ceil(total_marks * 0.4);
+      return {
+        ...exam,
+        total_marks,
+        passing_marks,
+        questions_count: stats.count,
+      };
+    }) as Exam[];
   },
 
   async getExamById(id: string): Promise<Exam | null> {
@@ -434,8 +501,23 @@ export const dataService = {
       .eq('id', id)
       .maybeSingle();
 
-    if (error) return null;
-    return data as Exam;
+    if (error || !data) return null;
+
+    const { data: qData } = await supabase
+      .from('exam_questions')
+      .select('marks')
+      .eq('exam_id', id);
+
+    const count = qData?.length || 0;
+    const totalMarks = (qData || []).reduce((sum, q) => sum + Number(q.marks || 1), 0);
+    const passingMarks = Math.ceil(totalMarks * 0.4);
+
+    return {
+      ...data,
+      total_marks: totalMarks,
+      passing_marks: passingMarks,
+      questions_count: count,
+    } as Exam;
   },
 
   async getExamQuestions(examId: string): Promise<ExamQuestion[]> {
@@ -527,8 +609,25 @@ export const dataService = {
         else if (['B', 'OPTION B', 'OPTION_B', '1'].includes(trimmed)) correctOpt = 1;
         else if (['C', 'OPTION C', 'OPTION_C', '2'].includes(trimmed)) correctOpt = 2;
         else if (['D', 'OPTION D', 'OPTION_D', '3'].includes(trimmed)) correctOpt = 3;
-        else if (!isNaN(Number(trimmed))) correctOpt = Number(trimmed);
+        else if (!isNaN(Number(trimmed))) {
+          correctOpt = Number(trimmed);
+        } else {
+          const optIdx = parsedOptions.findIndex(
+            (opt) => opt.trim().toLowerCase() === rawCorrect.trim().toLowerCase()
+          );
+          if (optIdx >= 0) {
+            correctOpt = optIdx;
+          }
+        }
       }
+
+      const parsedMarks = q.marks !== undefined && q.marks !== null
+        ? Number(q.marks)
+        : (q.mark !== undefined && q.mark !== null ? Number(q.mark) : 1);
+
+      const parsedNegMarks = q.negative_marks !== undefined && q.negative_marks !== null
+        ? Number(q.negative_marks)
+        : (q.negative_mark !== undefined && q.negative_mark !== null ? Number(q.negative_mark) : 0);
 
       return {
         id: String(q.id),
@@ -537,8 +636,8 @@ export const dataService = {
         question_image: q.question_image || q.image_url || null,
         options: parsedOptions,
         correct_option: correctOpt,
-        marks: Number(q.marks || 1),
-        negative_marks: Number(q.negative_marks || 0),
+        marks: parsedMarks,
+        negative_marks: parsedNegMarks,
         sort_order: q.sort_order ?? q.order ?? 0,
         explanation: q.explanation || q.solution || null,
       } as ExamQuestion;
@@ -551,55 +650,122 @@ export const dataService = {
       throw new Error('Unauthorized submission attempt');
     }
 
-    // 1. Check for duplicate submission using student_uid column
-    const { data: existing } = await supabase
-      .from('exam_results')
-      .select('*, exam:exams(*)')
-      .eq('exam_id', result.exam_id)
-      .eq('student_uid', activeUser.id)
-      .maybeSingle();
+    const calculatedScore = Number(result.score !== undefined && result.score !== null ? result.score : 0);
 
-    if (existing) {
-      console.log('[EXAM_SUBMIT_DUPLICATE_PREVENTED] Returning existing result:', existing.id);
-      return {
-        ...existing,
-        student_id: activeUser.id,
-        student_uid: activeUser.id,
-        score: existing.score ?? result.score ?? 0,
-        total_marks: result.total_marks ?? existing.total_questions ?? 0,
-        correct_count: result.correct_count ?? 0,
-        incorrect_count: result.incorrect_count ?? 0,
-        unattempted_count: result.unattempted_count ?? 0,
-        percentage: result.percentage ?? 0,
-        passed: Boolean(result.passed),
-      } as ExamResult;
-    }
-
-    // 2. Insert primary result into exam_results using matching schema columns (id, exam_id, student_uid, score, total_questions, submitted_at)
+    // Prepare insert payload
     const payload = {
       exam_id: result.exam_id,
       student_uid: activeUser.id,
-      score: Number(result.score || 0),
+      score: calculatedScore,
       total_questions: Number(result.unattempted_count !== undefined ? (result.correct_count || 0) + (result.incorrect_count || 0) + result.unattempted_count : (answers.length || 1)),
       submitted_at: new Date().toISOString(),
     };
 
+    console.log('[EXAM_SUBMIT] Attempting to insert new exam result in database...', payload);
     const primaryInsert = await supabase
       .from('exam_results')
       .insert(payload)
-      .select()
-      .single();
+      .select();
 
-    if (primaryInsert.error) {
-      console.error('[EXAM_RESULTS_SUBMIT_FAILED]', primaryInsert.error.message, primaryInsert.error.details);
-      throw new Error(primaryInsert.error.message || 'Failed to save exam result to database.');
+    let resData = primaryInsert.data?.[0];
+    let insertError = primaryInsert.error;
+
+    // Check if the error indicates a unique constraint violation (duplicate key / unique check)
+    const isUniqueViolation = insertError && (
+      insertError.code === '23505' || 
+      insertError.message?.toLowerCase().includes('unique') || 
+      insertError.message?.toLowerCase().includes('duplicate')
+    );
+
+    if (isUniqueViolation) {
+      console.log('[EXAM_SUBMIT] Unique constraint detected. Trying to update existing result instead...');
+      // Fetch the existing result to get its ID
+      const { data: existingList } = await supabase
+        .from('exam_results')
+        .select('*, exam:exams(*)')
+        .eq('exam_id', result.exam_id)
+        .eq('student_uid', activeUser.id)
+        .order('submitted_at', { ascending: false });
+
+      const existing = existingList && existingList.length > 0 ? existingList[0] : null;
+
+      if (existing) {
+        console.log('[EXAM_SUBMIT] Updating existing result row in DB:', existing.id);
+        const updatePayload = {
+          score: payload.score,
+          total_questions: payload.total_questions,
+          submitted_at: payload.submitted_at,
+        };
+
+        const { data: updatedRows, error: updateErr } = await supabase
+          .from('exam_results')
+          .update(updatePayload)
+          .eq('id', existing.id)
+          .select();
+
+        if (updateErr) {
+          console.error('[EXAM_RESULTS_UPDATE_FAILED]', updateErr.message);
+          throw new Error(updateErr.message || 'Failed to update exam result.');
+        }
+
+        resData = updatedRows?.[0];
+        if (!resData) {
+          console.log('[EXAM_SUBMIT] updatedRows was empty. Running secondary SELECT to fetch from database...');
+          const { data: fetchedRows, error: fetchErr } = await supabase
+            .from('exam_results')
+            .select('*, exam:exams(*)')
+            .eq('id', existing.id);
+          
+          if (fetchErr) {
+            console.error('[EXAM_SUBMIT] Secondary SELECT failed:', fetchErr.message);
+          }
+          resData = fetchedRows?.[0];
+        }
+
+        if (!resData) {
+          console.error('[EXAM_RESULTS_UPDATE_FAILED] No database row returned after update or secondary select');
+          throw new Error('Verification failed: No database row returned after update. Your result could not be saved.');
+        }
+
+        // Inject the joined exam object manually if present
+        if (existing.exam) {
+          (resData as any).exam = existing.exam;
+        }
+
+        // Delete existing answers to overwrite with new answers
+        try {
+          await supabase.from('exam_answers').delete().eq('result_id', existing.id);
+        } catch (delErr) {
+          console.warn('[EXAM_ANSWERS_DELETE_WARN] Could not delete old answers:', delErr);
+        }
+      } else {
+        throw new Error('Unique constraint violation, but no existing record found to update.');
+      }
+    } else if (insertError) {
+      console.error('[EXAM_RESULTS_SUBMIT_FAILED]', insertError.message);
+      throw new Error(insertError.message || 'Failed to save exam result to database.');
     }
 
-    const resData = primaryInsert.data;
+    if (!resData) {
+      console.log('[EXAM_SUBMIT] Primary insert data empty. Running secondary SELECT to fetch new attempt...');
+      const { data: fetchedNewRows } = await supabase
+        .from('exam_results')
+        .select('*, exam:exams(*)')
+        .eq('exam_id', result.exam_id)
+        .eq('student_uid', activeUser.id)
+        .order('submitted_at', { ascending: false });
+      
+      resData = fetchedNewRows?.[0];
+    }
 
-    // 3. Save student question answers to exam_answers using matching schema columns (result_id, question_id, is_correct)
+    if (!resData) {
+      console.error('[EXAM_RESULTS_SUBMIT_FAILED] No database row returned after write');
+      throw new Error('Verification failed: No database row returned. Your result could not be saved.');
+    }
+
+    // Save student question answers to exam_answers using matching schema columns (result_id, question_id, is_correct)
     try {
-      if (answers.length > 0 && resData?.id) {
+      if (answers.length > 0 && resData.id) {
         const mappedAnswers = answers.map((ans) => ({
           result_id: resData.id,
           question_id: ans.question_id,
@@ -619,8 +785,8 @@ export const dataService = {
       ...resData,
       student_id: activeUser.id,
       student_uid: activeUser.id,
-      score: Number(result.score || 0),
-      total_marks: Number(result.total_marks || result.score || 0),
+      score: calculatedScore,
+      total_marks: Number(result.total_marks !== undefined && result.total_marks !== null ? result.total_marks : calculatedScore),
       correct_count: Number(result.correct_count || 0),
       incorrect_count: Number(result.incorrect_count || 0),
       unattempted_count: Number(result.unattempted_count || 0),
@@ -643,16 +809,60 @@ export const dataService = {
       return [];
     }
 
-    return (data || []).map((res: any) => {
-      const score = Number(res.score || 0);
+    if (!data || data.length === 0) return [];
+
+    // Ensure strict reverse chronological sorting in memory across multiple attempts
+    const sortedData = [...data].sort((a: any, b: any) => {
+      const timeA = new Date(a.submitted_at || a.created_at || 0).getTime();
+      const timeB = new Date(b.submitted_at || b.created_at || 0).getTime();
+      return timeB - timeA;
+    });
+
+    // Fetch all answers for these results to calculate correct/incorrect counts
+    const resultIds = sortedData.map((r) => r.id);
+    const { data: answersData } = await supabase
+      .from('exam_answers')
+      .select('*')
+      .in('result_id', resultIds);
+
+    // Fetch questions for these exams to calculate total marks accurately
+    const examIds = Array.from(new Set(sortedData.map((r) => r.exam_id)));
+    const { data: questionsData } = await supabase
+      .from('exam_questions')
+      .select('exam_id, marks')
+      .in('exam_id', examIds);
+
+    const questionsByExam = (questionsData || []).reduce((acc: any, q: any) => {
+      if (!acc[q.exam_id]) acc[q.exam_id] = [];
+      acc[q.exam_id].push(q);
+      return acc;
+    }, {});
+
+    const answersByResult = (answersData || []).reduce((acc: any, ans: any) => {
+      if (!acc[ans.result_id]) acc[ans.result_id] = [];
+      acc[ans.result_id].push(ans);
+      return acc;
+    }, {});
+
+    return sortedData.map((res: any) => {
+      const score = Number(res.score !== undefined && res.score !== null ? res.score : 0);
       const examObj = res.exam || {};
-      const totalMarks = Number(res.total_marks ?? examObj.total_marks ?? res.total_questions ?? (score > 0 ? score : 1));
-      const totalQuestions = Number(res.total_questions ?? examObj.total_questions ?? (score > 0 ? score : 1));
-      const correctCount = Number(res.correct_count ?? score);
-      const incorrectCount = Number(res.incorrect_count ?? Math.max(0, totalQuestions - correctCount));
-      const percentage = Number(res.percentage ?? (totalMarks > 0 ? (score / totalMarks) * 100 : (score / Math.max(1, totalQuestions)) * 100));
-      const passingMarks = Number(examObj.passing_marks ?? Math.ceil(totalMarks * 0.4));
-      const passed = res.passed !== undefined ? Boolean(res.passed) : score >= passingMarks;
+      const examQuestions = questionsByExam[res.exam_id] || [];
+      
+      // Calculate total marks as sum of questions' marks
+      const totalMarks = examQuestions.length > 0
+        ? examQuestions.reduce((sum: number, q: any) => sum + (q.marks !== undefined && q.marks !== null ? Number(q.marks) : 1), 0)
+        : (Number(examObj.total_marks) || Number(res.total_questions) || 1);
+      const totalQuestions = Number(res.total_questions || examQuestions.length || 1);
+      
+      const resultAnswers = answersByResult[res.id] || [];
+      const correctCount = resultAnswers.filter((ans: any) => ans.is_correct === true).length;
+      const incorrectCount = resultAnswers.filter((ans: any) => ans.is_correct === false).length;
+      const unattemptedCount = Math.max(0, totalQuestions - (correctCount + incorrectCount));
+
+      const percentage = totalMarks > 0 ? (score / totalMarks) * 100 : 0;
+      const passingMarks = examObj.passing_marks ?? Math.ceil(totalMarks * 0.4);
+      const passed = score >= passingMarks;
 
       return {
         ...res,
@@ -663,7 +873,7 @@ export const dataService = {
         total_questions: totalQuestions,
         correct_count: correctCount,
         incorrect_count: incorrectCount,
-        unattempted_count: Number(res.unattempted_count ?? 0),
+        unattempted_count: unattemptedCount,
         percentage: Number.isNaN(percentage) ? 0 : percentage,
         passed,
         submitted_at: res.submitted_at || res.created_at || new Date().toISOString(),

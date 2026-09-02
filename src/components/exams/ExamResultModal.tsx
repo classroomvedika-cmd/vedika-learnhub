@@ -142,7 +142,7 @@ export const ExamResultModal: React.FC<ExamResultModalProps> = ({
                   {questions.map((q, idx) => {
                     const userSelected = userAnswers[q.id];
                     const hasSelected = userSelected !== undefined;
-                    const isCorrect = q.correct_option !== undefined && userSelected === q.correct_option;
+                    const isCorrect = q.correct_option !== undefined && q.correct_option !== null && userSelected === q.correct_option;
 
                     return (
                       <div
@@ -154,11 +154,11 @@ export const ExamResultModal: React.FC<ExamResultModalProps> = ({
                           {hasSelected ? (
                             isCorrect ? (
                               <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded shrink-0">
-                                +{q.marks} Marks
+                                +{q.marks ?? 1} Marks
                               </span>
                             ) : (
                               <span className="text-[10px] font-bold text-rose-800 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded shrink-0">
-                                -{q.negative_marks || 0}
+                                -{q.negative_marks ?? 0}
                               </span>
                             )
                           ) : (
