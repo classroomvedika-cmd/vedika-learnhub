@@ -238,6 +238,7 @@ export const PlansModal: React.FC<PlansModalProps> = ({ isOpen, onClose }) => {
         description: `${plan.name} (${plan.duration_days} Days Access)`,
         image: 'https://cdn.phototourl.com/free/2026-08-31-cde583fc-08b8-47ee-ab02-63114e29ce8d.png',
         order_id: orderData.order_id, // Pass real order_id for signature verification matching
+        webview_intent: true,
         prefill: {
           name: profile?.full_name || 'Vedika Student',
           email: profile?.email || user.email || '',
