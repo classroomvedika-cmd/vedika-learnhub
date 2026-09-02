@@ -93,6 +93,16 @@ const MainAppLayout: React.FC = () => {
     <div className="h-screen h-[100dvh] bg-[#1E1B31] text-[#172033] flex justify-center overflow-hidden">
       {/* Mobile-first responsive wrapper */}
       <div className="w-full max-w-lg h-full bg-[#F5F3F9] border-x border-[#EAE6F4] shadow-2xl flex flex-col relative overflow-hidden">
+        {/* Android System Status Bar Spacer */}
+        <div
+          id="system-status-bar-spacer"
+          className="w-full shrink-0 bg-[#312C51] select-none pointer-events-none z-50"
+          style={{
+            height: 'max(24px, env(safe-area-inset-top, 24px))',
+          }}
+          aria-hidden="true"
+        />
+
         {/* Top Header */}
         {activeTab !== 'community' && (
           <TopHeader

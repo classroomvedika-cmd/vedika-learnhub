@@ -63,6 +63,16 @@ export const ContentDetailModal: React.FC<ContentDetailModalProps> = ({
           exit={{ opacity: 0, y: 30, scale: 0.98 }}
           className="w-full max-w-lg h-full sm:h-[88vh] bg-white border border-slate-200 rounded-none sm:rounded-3xl flex flex-col overflow-hidden shadow-2xl text-slate-900"
         >
+          {/* Android System Status Bar Spacer */}
+          <div
+            id="content-detail-status-bar-spacer"
+            className="w-full shrink-0 bg-[#312C51] select-none pointer-events-none sm:hidden"
+            style={{
+              height: 'max(24px, env(safe-area-inset-top, 24px))',
+            }}
+            aria-hidden="true"
+          />
+
           {/* Header */}
           <div className="px-5 py-3.5 bg-white border-b border-slate-100 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2">

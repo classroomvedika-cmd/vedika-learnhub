@@ -319,7 +319,7 @@ export const CommunityView: React.FC<{ onBack?: () => void }> = ({ onBack }) => 
     return (
       <div className="flex flex-col h-full bg-[#F5F3F9] overflow-hidden">
         {/* Top Header Bar */}
-        <div className="bg-white border-b border-slate-200 px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top,0px))] flex items-center gap-3 shrink-0 shadow-xs">
+        <div className="bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3 shrink-0 shadow-xs">
           {onBack && (
             <button
               onClick={onBack}
@@ -481,7 +481,7 @@ export const CommunityView: React.FC<{ onBack?: () => void }> = ({ onBack }) => 
   // ---------------- 2. COMMUNITY CHAT SCREEN ----------------
   if (currentScreen === 'community-chat') {
     return (
-      <div className="flex flex-col h-full bg-[#F5F3F9] px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-hidden">
+      <div className="flex flex-col h-full bg-[#F5F3F9] px-4 pb-4 pt-3 overflow-hidden">
         {/* Header */}
         <div className="bg-white border border-slate-200 rounded-2xl p-3.5 flex items-center justify-between shrink-0 shadow-xs mb-3">
           <div className="flex items-center gap-2.5">
@@ -634,7 +634,7 @@ export const CommunityView: React.FC<{ onBack?: () => void }> = ({ onBack }) => 
   // ---------------- 3. HELP DESK SCREEN ----------------
   if (currentScreen === 'help-desk') {
     return (
-      <div className="flex flex-col h-full bg-[#F5F3F9] px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-hidden">
+      <div className="flex flex-col h-full bg-[#F5F3F9] px-4 pb-4 pt-3 overflow-hidden">
         {/* Header */}
         <div className="bg-white border border-slate-200 rounded-2xl p-3.5 flex items-center justify-between shrink-0 shadow-xs mb-3">
           <div className="flex items-center gap-2.5">
@@ -746,7 +746,7 @@ export const CommunityView: React.FC<{ onBack?: () => void }> = ({ onBack }) => 
     // Sub-view: Doubt Detail View
     if (selectedDoubt) {
       return (
-        <div className="flex flex-col h-full bg-[#F5F3F9] px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-hidden">
+        <div className="flex flex-col h-full bg-[#F5F3F9] px-4 pb-4 pt-3 overflow-hidden">
           {/* Header */}
           <div className="bg-white border border-slate-200 rounded-2xl p-3.5 flex items-center justify-between shrink-0 shadow-xs mb-3">
             <button
@@ -897,7 +897,7 @@ export const CommunityView: React.FC<{ onBack?: () => void }> = ({ onBack }) => 
 
     // Sub-view: Doubts List View
     return (
-      <div className="flex flex-col h-full bg-[#F5F3F9] px-4 pb-24 pt-[calc(1rem+env(safe-area-inset-top,0px))] overflow-y-auto custom-scrollbar space-y-4">
+      <div className="flex flex-col h-full bg-[#F5F3F9] px-4 pb-24 pt-3 overflow-y-auto custom-scrollbar space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between bg-white border border-slate-200 rounded-2xl p-3.5 shadow-xs">
           <div className="flex items-center gap-2.5">
