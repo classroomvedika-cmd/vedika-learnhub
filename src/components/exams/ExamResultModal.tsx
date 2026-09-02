@@ -46,7 +46,7 @@ export const ExamResultModal: React.FC<ExamResultModalProps> = ({
           className="w-full max-w-lg h-full sm:h-[90vh] bg-white border border-slate-200 rounded-none sm:rounded-3xl flex flex-col overflow-hidden shadow-2xl text-slate-900"
         >
           {/* Header */}
-          <div className="px-5 py-3.5 bg-white border-b border-slate-100 flex items-center justify-between shrink-0">
+          <div className="px-5 pb-3.5 pt-[calc(0.875rem+env(safe-area-inset-top,0px))] bg-white border-b border-slate-100 flex items-center justify-between shrink-0">
             <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
               <Trophy className="w-4 h-4 text-amber-500" />
               EXAMINATION RESULT

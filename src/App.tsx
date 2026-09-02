@@ -64,7 +64,7 @@ const MainAppLayout: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#312C51] flex flex-col items-center justify-center p-6 text-center text-white">
+      <div className="min-h-screen bg-[#312C51] flex flex-col items-center justify-center p-6 pt-[calc(1.5rem+env(safe-area-inset-top,0px))] text-center text-white">
         <motion.div
           animate={{ scale: [1, 1.05, 1] }}
           transition={{ repeat: Infinity, duration: 2 }}

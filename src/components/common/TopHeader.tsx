@@ -18,8 +18,20 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   const resolvedStudentId = profile?.id ? resolvePersistentStudentId(profile.id, profile.student_id) : (profile?.student_id || 'Student Hub');
 
   return (
-    <header className="relative shrink-0 z-30 w-full bg-white/90 backdrop-blur-md border-b border-[#EAE6F4] px-4 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
-      <div className="max-w-lg mx-auto flex items-center justify-between gap-3">
+    <div className="relative shrink-0 z-30 w-full flex flex-col">
+      {/* Android System Status Bar Spacer */}
+      <div
+        id="system-status-bar-spacer"
+        className="w-full shrink-0 bg-[#312C51] select-none pointer-events-none"
+        style={{
+          height: 'max(24px, env(safe-area-inset-top, 24px))',
+        }}
+        aria-hidden="true"
+      />
+
+      {/* Existing Top Navigation Header */}
+      <header className="relative shrink-0 w-full bg-white/90 backdrop-blur-md border-b border-[#EAE6F4] px-4 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
+        <div className="max-w-lg mx-auto flex items-center justify-between gap-3">
         {/* Brand & Student Snapshot */}
         <button
           type="button"
@@ -103,5 +115,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
         </div>
       </div>
     </header>
-  );
+  </div>
+);
 };

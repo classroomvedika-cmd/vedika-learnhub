@@ -228,7 +228,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#312C51] text-white flex flex-col justify-between px-4 py-8 relative overflow-hidden select-none">
+    <div className="min-h-screen bg-[#312C51] text-white flex flex-col justify-between px-4 pb-8 pt-[calc(2rem+env(safe-area-inset-top,0px))] relative overflow-hidden select-none">
       {/* Background Ambience */}
       <div className="absolute -top-32 -left-32 w-80 h-80 bg-[#48426D]/60 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -bottom-32 -right-32 w-80 h-80 bg-[#F0C38E]/20 rounded-full blur-3xl pointer-events-none" />

@@ -152,7 +152,7 @@ export const LiveExamModal: React.FC<LiveExamModalProps> = ({
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-[#F7F9FC] text-slate-900">
       {/* Top Header Bar */}
-      <div className="px-4 py-3 bg-white border-b border-slate-200 flex items-center justify-between shrink-0 shadow-xs">
+      <div className="px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top,0px))] bg-white border-b border-slate-200 flex items-center justify-between shrink-0 shadow-xs">
         <div>
           <h3 className="font-extrabold text-xs text-slate-900 uppercase tracking-wider truncate max-w-[180px]">
             {exam.title}

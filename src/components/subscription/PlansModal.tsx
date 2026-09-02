@@ -429,7 +429,7 @@ export const PlansModal: React.FC<PlansModalProps> = ({ isOpen, onClose }) => {
           className="w-full max-w-lg h-full sm:h-[88vh] bg-[#F5F3F9] border border-[#EAE6F4] rounded-none sm:rounded-3xl flex flex-col overflow-hidden shadow-2xl"
         >
           {/* Header */}
-          <div className="px-5 py-4 bg-white border-b border-[#EAE6F4] flex items-center justify-between shrink-0">
+          <div className="px-5 pb-4 pt-[calc(1rem+env(safe-area-inset-top,0px))] bg-white border-b border-[#EAE6F4] flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-2xl bg-[#312C51] text-[#F0C38E] flex items-center justify-center font-bold shadow-xs">
                 <ShieldCheck className="w-5 h-5" />

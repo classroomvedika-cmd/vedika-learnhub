@@ -135,7 +135,7 @@ export const AuthCallback: React.FC<AuthCallbackProps> = ({ onComplete }) => {
   }, [onComplete, refreshProfile]);
 
   return (
-    <div className="min-h-screen bg-[#080c14] text-slate-100 flex flex-col items-center justify-center p-6 text-center select-none">
+    <div className="min-h-screen bg-[#080c14] text-slate-100 flex flex-col items-center justify-center p-6 pt-[calc(1.5rem+env(safe-area-inset-top,0px))] text-center select-none">
       <div className="w-full max-w-sm bg-[#0f1626]/95 border border-slate-800 rounded-3xl p-6 shadow-2xl backdrop-blur-xl">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 shadow-xl shadow-blue-500/25 mb-4 border border-blue-400/30">
           <GraduationCap className="w-8 h-8 text-white" />
